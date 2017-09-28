@@ -178,7 +178,6 @@ server.route({
 
         var conn = new mssql.ConnectionPool(dbconfig);
 
-        var result = [];
         var requst = new mssql.Request(conn);
 
         conn.connect(function (err) {
@@ -198,7 +197,6 @@ server.route({
                 conn.close();
             });
         });
-        return result;
     },
     config: {
         tags: ['api'],
@@ -358,12 +356,52 @@ server.route({
     method: 'DELETE',
     path: '/todos/{todo_id}',
     handler: function (request, reply) {
-        if (!(request.params.todo_id in todos)) {
-            reply('Todo Not Found').code(404);
-            return;
-        }
-        delete todos[request.params.todo_id];
-        reply().code(204);
+       
+        // delete todos[request.params.todo_id];
+        var conn = new mssql.ConnectionPool(dbconfig);
+        var requst = new mssql.Request(conn);
+        var counter = 0;
+        conn.connect(function (err) {
+
+            if (err) {
+                console.log(err);
+                return;
+            }
+
+            for (var i = 0; i < todos.length ;i++) {
+                if (request.params.todo_id == todos[i].SupplierID) {                   
+                    counter++;                  
+                }                                   
+                }
+
+            if (counter > 0) {
+                for (var j in todos) {
+                    todos = todos.filter(function () {
+                        return todos[j].SupplierID !== request.params.todo_id;
+                    });
+                }  
+
+                requst.query("delete FROM Suppliers where SupplierID = '" + request.params.todo_id + "'", function (err, records) {
+
+                    if (err) {
+                        console.log(err);
+                        return;
+                    }
+                    else {
+                        reply('The Record Has Been Deleted').code(200);
+                    }
+                    todos = getSuppliers();
+                    conn.close();
+                });
+            }
+            else {
+              
+                reply('Todo Not Found').code(404);
+                //return;
+                }
+
+           
+        });
     },
     config: {
         tags: ['api'],

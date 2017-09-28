@@ -15,7 +15,7 @@ var dbconfig = {
     port: 1433
 };
 //
-function  getCustomer() {
+function  getSuppliers() {
 
     var conn = new mssql.ConnectionPool(dbconfig);
 
@@ -68,7 +68,8 @@ function  getCustomer() {
 //    2: { title: '?????', order: 2, completed: false },
 //    3: { title: 'profit!', order: 3, completed: false }
 //};
-var todos = getCustomer();
+
+var todos = getSuppliers();
 
 var nextId = todos.length;
 
@@ -192,22 +193,54 @@ server.route({
     method: 'POST',
     path: '/todos/',
     handler: function (request, reply) {
-        todos[nextId] = {
-            title: request.payload.title,
-            order: request.payload.order || 0,
-            completed: request.payload.completed || false
-        }
-        nextId++;
-        reply(getTodo(nextId - 1)).code(201);
+        //todos[nextId] = {
+        //    title: request.payload.title,
+        //    order: request.payload.order || 0,
+        //    completed: request.payload.completed || false
+        //}
+        //nextId++;
+        //reply(getTodo(nextId - 1)).code(201);
+
+        //todos = getSuppliers();
+        
+        var conn = new mssql.ConnectionPool(dbconfig);
+        var requst = new mssql.Request(conn);
+        conn.connect(function (err) {
+            if (err) {
+                console.log(err);
+                return "ERROR";
+            }
+
+              requst.query("insert into Suppliers values('" + request.payload.CompanyName + "','" +
+                request.payload.ContactName + "','" + request.payload.Address + "','" + request.payload.City + "','"
+                + request.payload.PostalCode + "','"
+                  + request.payload.Country + "')", function (err, records) {
+                      var nextid1 = todos.length;
+                if (err) {
+                    console.log(err);
+                    return "CONNECTION ERROR";
+                }
+                else {
+                    console.log("Inserted Successfully");
+                    reply(getTodo(nextid1 - 1)).code(201);
+                    nextid1 ++;
+                }
+                conn.close();
+            });
+        });
+
     },
     config: {
         tags: ['api'],
         description: 'Create a todo',
         validate: {
             payload: {
-                title: Joi.string().required(),
-                order: Joi.number().integer(),
-                completed: Joi.boolean()
+                CompanyName: Joi.string(),
+                ContactName: Joi.string(),
+                Address: Joi.string(),
+                City: Joi.string(),
+                PostalCode: Joi.string(),
+                Country: Joi.string()
             }
         },
         plugins: {

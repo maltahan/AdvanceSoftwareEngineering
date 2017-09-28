@@ -173,8 +173,32 @@ server.route({
     method: 'DELETE',
     path: '/todos/',
     handler: function (request, reply) {
-        todos = {};
-        reply();
+        //todos = {};
+        //reply();
+
+        var conn = new mssql.ConnectionPool(dbconfig);
+
+        var result = [];
+        var requst = new mssql.Request(conn);
+
+        conn.connect(function (err) {
+
+            if (err) {
+                console.log(err);
+                return;
+            }
+            requst.query("delete FROM Suppliers", function (err, records) {
+                if (err) {
+                    console.log(err);
+                    return;
+                }
+                else {
+                    reply('ALL THE RECORDS HAS BEEN DELETED');
+                }
+                conn.close();
+            });
+        });
+        return result;
     },
     config: {
         tags: ['api'],

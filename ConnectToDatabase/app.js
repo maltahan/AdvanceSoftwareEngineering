@@ -267,8 +267,7 @@ server.route({
                 console.log(err);
                 return "ERROR";
             }
-            
-            
+                      
               requst.query("insert into Suppliers values('" + request.payload.CompanyName + "','" +
                 request.payload.ContactName + "','" + request.payload.Address + "','" + request.payload.City + "','"
                 + request.payload.PostalCode + "','"
@@ -361,14 +360,56 @@ server.route({
     path: '/todos/{todo_id}',
     handler: function (request, reply) {
         todoId = request.params.todo_id;
-        if (!(todoId in todos)) {
-            reply().code(404);
-        } else {
-            for (var attrName in request.payload) {
-                todos[todoId][attrName] = request.payload[attrName];
+        var GetRecords = getTodo(todoId);
+        var s = GetRecords.SupplierID;
+        var counter = 0;
+        for (var i = 0; i < todos.length; i++) {
+            if (s == todos[i].SupplierID) {
+                counter++;
             }
-            reply(getTodo(todoId)).code(200);
         }
+
+        if (counter > 0) {
+
+            var conn = new mssql.ConnectionPool(dbconfig);
+
+            var requst = new mssql.Request(conn);
+
+            conn.connect(function (err) {
+
+                if (err) {
+                    console.log(err);
+                    return;
+                }
+                for (var attrName in request.payload) {
+                    todos[todoId][attrName] = request.payload[attrName];
+                    var gg = todos;
+                    var Query = "Update Suppliers set " + attrName + " = '" + request.payload[attrName] + "' where SupplierID = '" + s+"'";
+
+                    requst.query(Query, function (err, records) {
+                    if (err) {
+                        console.log(err);
+                        return;
+                    }
+                    else {
+                        reply('The Records Has Been Updated');
+                    }
+                    conn.close();
+                    });
+                }
+                reply(getTodo(todoId)).code(200);
+            });
+            
+        }
+
+        else {
+            reply().code(404);
+        }
+        //if (!(todoId in todos)) {
+            
+        //} else {
+            
+        //}
     },
     config: {
         tags: ['api'],
@@ -378,9 +419,13 @@ server.route({
                 todo_id: todoIdSchema
             },
             payload: {
-                title: Joi.string(),
-                completed: Joi.boolean(),
-                order: Joi.number()
+                SupplierID: Joi.number().integer(),
+                CompanyName: Joi.string(),
+                ContactName: Joi.string(),
+                Address: Joi.string(),
+                City: Joi.string(),
+                PostalCode: Joi.string(),
+                Country: Joi.string()
             }
         },
         plugins: {

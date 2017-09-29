@@ -383,7 +383,6 @@ server.route({
                 }
                 for (var attrName in request.payload) {
                     todos[todoId][attrName] = request.payload[attrName];
-                    var gg = todos;
                     var Query = "Update Suppliers set " + attrName + " = '" + request.payload[attrName] + "' where SupplierID = '" + s+"'";
 
                     requst.query(Query, function (err, records) {
@@ -450,6 +449,9 @@ server.route({
         // delete todos[request.params.todo_id];
         var conn = new mssql.ConnectionPool(dbconfig);
         var requst = new mssql.Request(conn);
+        todoId = request.params.todo_id;
+        var GetRecords = getTodo(todoId);
+        var s = GetRecords.SupplierID;
         var counter = 0;
         conn.connect(function (err) {
 
@@ -459,7 +461,7 @@ server.route({
             }
 
             for (var i = 0; i < todos.length ;i++) {
-                if (request.params.todo_id == todos[i].SupplierID) {                   
+                if (s == todos[i].SupplierID) {                   
                     counter++;                  
                 }                                   
                 }
@@ -467,11 +469,11 @@ server.route({
             if (counter > 0) {
                 for (var j in todos) {
                     todos = todos.filter(function () {
-                        return todos[j].SupplierID !== request.params.todo_id;
+                        return todos[j].SupplierID !== s;
                     });
                 }  
 
-                requst.query("delete FROM Suppliers where SupplierID = '" + request.params.todo_id + "'", function (err, records) {
+                requst.query("delete FROM Suppliers where SupplierID = '" + s + "'", function (err, records) {
 
                     if (err) {
                         console.log(err);
@@ -487,7 +489,7 @@ server.route({
             else {
               
                 reply('Todo Not Found').code(404);
-                //return;
+                return;
                 }
 
            

@@ -355,7 +355,6 @@ server.route({
             }
         }
         if (counter > 0) {
-
             var conn = new mssql.ConnectionPool(dbconfig);
             var requst = new mssql.Request(conn);
             conn.connect(function (err) {

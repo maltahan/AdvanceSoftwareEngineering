@@ -347,10 +347,10 @@ server.route({
     handler: function (request, reply) {
         SupplierId = request.params.Supplier_id;
         var GetRecords = getSupplier(SupplierId);
-        var s = GetRecords.SupplierID;
+        var SupplierIdFromParameter = GetRecords.SupplierID;
         var counter = 0;
         for (var i = 0; i < Suppliers.length; i++) {
-            if (s == Suppliers[i].SupplierID) {
+            if (SupplierIdFromParameter == Suppliers[i].SupplierID) {
                 counter++;
             }
         }
@@ -365,8 +365,7 @@ server.route({
                 }
                 for (var attrName in request.payload) {
                     Suppliers[SupplierId][attrName] = request.payload[attrName];
-                    var Query = "Update Suppliers set " + attrName + " = '" + request.payload[attrName] + "' where SupplierID = '" + s + "'";
-
+                    var Query = "Update Suppliers set " + attrName + " = '" + request.payload[attrName] + "' where SupplierID = '" + SupplierIdFromParameter + "'";
                     requst.query(Query, function (err, records) {
                         if (err) {
                             console.log(err);
@@ -429,7 +428,7 @@ server.route({
         var requst = new mssql.Request(conn);
         SupplierId = request.params.Supplier_id;
         var GetRecords = getSupplier(SupplierId);
-        var s = GetRecords.SupplierID;
+        var SupplierIDFromParameter = GetRecords.SupplierID;
         var counter = 0;
         conn.connect(function (err) {
 
@@ -438,7 +437,7 @@ server.route({
                 return;
             }
             for (var i = 0; i < Suppliers.length; i++) {
-                if (s == Suppliers[i].SupplierID) {
+                if (SupplierIDFromParameter == Suppliers[i].SupplierID) {
                     counter++;
                 }
             }
@@ -446,10 +445,10 @@ server.route({
             if (counter > 0) {
                 for (var j in Suppliers) {
                     Suppliers = Suppliers.filter(function () {
-                        return Suppliers[j].SupplierID !== s;
+                        return Suppliers[j].SupplierID !== SupplierIDFromParameter;
                     });
                 }
-                requst.query("delete FROM Suppliers where SupplierID = '" + s + "'", function (err, records) {
+                requst.query("delete FROM Suppliers where SupplierID = '" + SupplierIDFromParameter + "'", function (err, records) {
 
                     if (err) {
                         console.log(err);

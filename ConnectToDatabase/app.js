@@ -38,7 +38,6 @@ function  getSuppliers() {
                 
                 for (var id in records.recordset) {
                     result.push({
-
                         SupplierID: records.recordset[id].SupplierID,
                         CompanyName: records.recordset[id].CompanyName,
                         ContactName: records.recordset[id].ContactName,
@@ -60,6 +59,42 @@ function  getSuppliers() {
     return result;
 }
 
+function getLastrecordData() {
+    var conn = new mssql.ConnectionPool(dbconfig);
+
+    var result = [];
+    var requst = new mssql.Request(conn);
+
+    conn.connect(function (err) {
+
+        if (err) {
+            console.log(err);
+            return;
+        }
+        requst.query("SELECT TOP 1 * FROM Suppliers ORDER BY SupplierID DESC", function (err, records) {
+            if (err) {
+                console.log(err);
+                return;
+            }
+            else {
+                //console.log(records);
+
+                for (var id in records.recordset) {
+                    result.push({
+                        SupplierID: records.recordset[id].SupplierID,                       
+                    });
+
+                }
+                //console.log(result);
+
+
+            }
+            conn.close();
+        });
+    });
+    return result;
+}
+
 
 //SupplierID,CompanyName,ContactName,Address,City,Region,PostalCode,Country
 
@@ -72,7 +107,7 @@ function  getSuppliers() {
 var todos = getSuppliers();
 
 var nextId = todos.length;
-
+var s = getLastrecordData();
 //var todoResourceSchema = Joi.object({
 //    title: Joi.string(),
 //    completed: Joi.boolean(),
@@ -109,6 +144,7 @@ var getTodo = function (id) {
     }
     return result;
 };
+
 
 const server = new Hapi.Server();
 server.connection({
@@ -223,8 +259,7 @@ server.route({
         //nextId++;
         //reply(getTodo(nextId - 1)).code(201);
 
-        //todos = getSuppliers();
-        
+        var data = getLastrecordData();
         var conn = new mssql.ConnectionPool(dbconfig);
         var requst = new mssql.Request(conn);
         conn.connect(function (err) {
@@ -232,21 +267,30 @@ server.route({
                 console.log(err);
                 return "ERROR";
             }
-
+            
+            
               requst.query("insert into Suppliers values('" + request.payload.CompanyName + "','" +
                 request.payload.ContactName + "','" + request.payload.Address + "','" + request.payload.City + "','"
                 + request.payload.PostalCode + "','"
                   + request.payload.Country + "')", function (err, records) {
-                      var nextid1 = todos.length;
+                      todos.push({
+                          SupplierID: request.payload.SupplierID,
+                          CompanyName: request.payload.CompanyName,
+                          ContactName: request.payload.ContactName,
+                          Address: request.payload.Address,
+                          City: request.payload.City,
+                          PostalCode: request.payload.PostalCode,
+                          Country: request.payload.Country,
+                      });
+                      var next = todos.length;
                 if (err) {
                     console.log(err);
                     return "CONNECTION ERROR";
                 }
                 else {
                     console.log("Inserted Successfully");
-                    reply(getTodo(nextid1 - 1)).code(201);
-                    nextid1 ++;
-                }
+                    reply(getTodo(next - 1)).code(201);
+                      }
                 conn.close();
             });
         });
@@ -257,6 +301,7 @@ server.route({
         description: 'Create a todo',
         validate: {
             payload: {
+                SupplierID: Joi.number().integer(),
                 CompanyName: Joi.string(),
                 ContactName: Joi.string(),
                 Address: Joi.string(),

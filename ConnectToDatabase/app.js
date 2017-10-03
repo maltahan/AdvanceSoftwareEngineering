@@ -479,6 +479,101 @@ server.route({
 });
 //=======================================================================
 
+
+
+//============================================================================
+ //Update Certain Values From Tag Objects
+server.route({
+    method: 'PUT',
+    path: '/tags/{Tag_Id}',
+    handler: function (request, reply) {
+        Tag_ID = request.params.Tag_Id;
+        var GetRecords = getTag(Tag_ID);
+        var TagIdFromParameter = GetRecords.Tag_Id;
+        var counter = 0;
+        for (var i = 0; i < Tags.length; i++) {
+            if (TagIdFromParameter == Tags[i].Tag_Id) {
+                counter++;
+            }
+        }
+        if (counter > 0) {
+            var conn = new mssql.ConnectionPool(dbconfig);
+            var requst = new mssql.Request(conn);
+            conn.connect(function (err) {
+
+                if (err) {
+                    console.log(err);
+                    return;
+                }
+                for (var attrName in request.payload) {
+                    Tags[Tag_ID][attrName] = request.payload[attrName];
+                    var Query = "Update Tag set " + attrName + " = '" + request.payload[attrName] + "' where Tag_Id = '" + TagIdFromParameter + "'";
+                    requst.query(Query, function (err, records) {
+                        if (err) {
+                            console.log(err);
+                            return;
+                        }                       
+                        conn.close();
+                    });
+                }
+                reply(getTag(Tag_ID)).code(200);
+            });
+
+        }
+
+        else {
+            var conn = new mssql.ConnectionPool(dbconfig);
+            var requst = new mssql.Request(conn);
+            conn.connect(function (err) {
+
+                if (err) {
+                    console.log(err);
+                    return;
+                }                 
+
+                    var Query = "insert into Tag values('" + request.payload.Tag_Name + "')";
+                    Tags.push({
+                        Tag_Id:   request.payload.Tag_Id,
+                        Tag_Name: request.payload.Tag_Name,
+                    });
+                
+                    requst.query(Query, function (err, records) {
+                        if (err) {
+                            console.log(err);
+                            return;
+                        }
+                        conn.close();
+                    });
+                reply(getTag(Tag_ID)).code(200);
+            });
+        }
+    },
+    config: {
+        tags: ['api'],
+        description: 'Update a given Tag',
+        validate: {
+            params: {
+                Tag_Id: TagIdSchema
+            },
+            payload: {
+                Tag_Id: Joi.number().integer(),
+                Tag_Name: Joi.string()
+            }
+        },
+        plugins: {
+            'hapi-swagger': {
+                responses: {
+                    200: {
+                        description: 'Success',
+                        schema: TagResourceSchema.label('Result')
+                    },
+                    404: { description: 'Tag not found' }
+                }
+            }
+        }
+    }
+});
+
 //Start The Server
 server.start((err) => {
     console.log('Server running at:', server.info.uri);

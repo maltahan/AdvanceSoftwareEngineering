@@ -51,6 +51,73 @@ function GetTags() {
 
 //===========================================================================
 
+function Get_Todo_Tag() {
+
+    //Establish The Connection To The Database
+    var conn = new mssql.ConnectionPool(dbconfig);
+    var result = [];
+    var requst = new mssql.Request(conn);
+    conn.connect(function (err) {
+        if (err) {
+            console.log(err);
+            return;
+        }
+        //Send The Query To The Database
+        requst.query("SELECT * FROM Todo_Tag", function (err, records) {
+            if (err) {
+                console.log(err);
+                return;
+            }
+            else {
+                for (var id in records.recordset) {
+                    result.push({
+                        Tag_Id: records.recordset[id].Tag_Id,
+                        Todo_Id: records.recordset[id].Todo_Id
+                    });
+
+                }
+            }
+            conn.close();
+        });
+    });
+    return result;
+}
+//======================================================================
+
+function GetTodos() {
+
+    //Establish The Connection To The Database
+    var conn = new mssql.ConnectionPool(dbconfig);
+    var result = [];
+    var requst = new mssql.Request(conn);
+    conn.connect(function (err) {
+        if (err) {
+            console.log(err);
+            return;
+        }
+        //Send The Query To The Database
+        requst.query("SELECT * FROM Todo", function (err, records) {
+            if (err) {
+                console.log(err);
+                return;
+            }
+            else {
+                for (var id in records.recordset) {
+                    result.push({
+                        Todo_Id: records.recordset[id].Todo_Id,
+                        Todo_Name: records.recordset[id].Todo_Name,
+                        Complete: records.recordset[id].Complete,
+                        url: server.info.uri + '/tags/todos/' + id
+                    });
+
+                }
+            }
+            conn.close();
+        });
+    });
+    return result;
+}
+
 //===========================================================================
 //Get The Last SupplierID From The Database
 function getLastRecordData() {
@@ -84,6 +151,8 @@ function getLastRecordData() {
 //================================================================================
 //Some Restrections About The Data Types and The IDs
 var Tags = GetTags();
+var Todos = GetTodos();
+var Todos_Tag = Get_Todo_Tag();
 var nextId = Tags.length;
 //var LastRecord = getLastRecordData();
 
@@ -98,7 +167,7 @@ var TagIdSchema = Joi.number().integer().min(0)
 
 
 //=============================================================================
-//Get The Supplier By ID
+//Get The Tag By ID
 var getTag = function (id) {
     if (!(id in Tags)) { return false; }
     var result = {
@@ -110,7 +179,45 @@ var getTag = function (id) {
 };
 //=============================================================================
 
+
+//Get The Todo ids By tag ID
+var gettodosIDS = function (TagID) {
+   
+    var result = [];
+    for (var id in Todos_Tag) {
+        if (Todos_Tag[id].Tag_Id == TagID){
+            result.push({
+                Todo_Id: Todos_Tag[id].Todo_Id
+            }); 
+        }
+        
+    }
+    return result;
+};
+
 //============================================================================
+
+
+//Get The Todo ids By tag ID
+var getTodosList = function (TodosId) {
+
+    var result = [];
+    for (var id in Todos) {
+        if (Todos[id].Todo_Id == TodosId) {
+            result.push({
+                Todo_Id: Todos[id].Todo_Id,
+                Todo_Name: Todos[id].Todo_Name,
+                Complete: Todos[id].Complete,
+                //url: server.info.uri + '/tags/todos/' + id
+            });
+        }
+
+    }
+    return result;
+};
+
+//=============================================================================
+
 // Create The Server Using Habi 
 const server = new Hapi.Server();
 server.connection({
@@ -161,7 +268,7 @@ server.route({
     },
     config: {
         tags: ['api'],
-        description: 'List all Suppliers',
+        description: 'List all Tags',
         plugins: {
             'hapi-swagger': {
                 responses: {
@@ -285,7 +392,7 @@ server.route({
     }
 });
 //=====================================================================
-//Get A Supplier By ID
+//Get A Tag By ID
 server.route({
     method: 'GET',
     path: '/tags/{tag_id}',
@@ -470,8 +577,8 @@ server.route({
         plugins: {
             'hapi-swagger': {
                 responses: {
-                    204: { description: 'Supplier deleted' },
-                    404: { description: 'Supplier not found' }
+                    204: { description: 'Tag deleted' },
+                    404: { description: 'Tag not found' }
                 }
             }
         }
@@ -480,6 +587,53 @@ server.route({
 //=======================================================================
 
 
+//List all the todos that are assosiated to a certain tag
+server.route({
+    method: 'GET',
+    path: '/tags/todos/{Tag_Id}',
+    handler: function (request, reply) {
+        var result = [];
+        var Tag_ID = request.params.Tag_Id; 
+        var GetRecords = getTag(Tag_ID);
+        var TagIDFromParameter = GetRecords.Tag_Id;
+        var Todo_IDs = gettodosIDS(TagIDFromParameter);
+        for (var key in Todo_IDs) {
+            result.push(getTodosList(Todo_IDs[key].Todo_Id));
+        }
+        reply(result).code(200);
+        //response = getTag(request.params.tag_id);
+        //if (response === false) {
+        //    reply().code(404);
+        //} else {
+        //    reply(response).code(200);
+        //}
+        //for (var key in Tags) {
+        //    result.push(getTag(key));
+        //}
+        //reply(result).code(200);
+    },
+    config: {
+        tags: ['api'],
+        description: 'List all Tags',
+        validate: {
+            params: {
+                Tag_Id: TagIdSchema
+            }
+        },
+        plugins: {
+            'hapi-swagger': {
+                responses: {
+                    200: {
+                        description: 'Success',
+                        schema: Joi.array().items(
+                            TagResourceSchema.label('Result')
+                        )
+                    }
+                }
+            }
+        }
+    }
+});
 
 //============================================================================
  //Update Certain Values From Tag Objects

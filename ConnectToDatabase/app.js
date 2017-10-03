@@ -177,11 +177,23 @@ var getTag = function (id) {
     }
     return result;
 };
+
+//Get The Tag By ID
+var getTodo = function (id) {
+    if (!(id in Todos)) { return false; }
+    var result = {
+        Todo_Id: Todos[id].Todo_Id,
+        Todo_Name: Todos[id].Todo_Name,
+        Complete: Todos[id].Complete,
+        url: server.info.uri + '/todos/' + id
+    }
+    return result;
+};
 //=============================================================================
 
 
 //Get The Todo ids By tag ID
-var gettodosIDS = function (TagID) {
+var gettodosIDSFromTagID = function (TagID) {
    
     var result = [];
     for (var id in Todos_Tag) {
@@ -195,21 +207,54 @@ var gettodosIDS = function (TagID) {
     return result;
 };
 
+
+//Get The Tags ids By todo ID
+var gettagsIDSFromTodoID = function (TodoID) {
+
+    var result = [];
+    for (var id in Todos_Tag) {
+        if (Todos_Tag[id].Todo_Id == TodoID) {
+            result.push({
+                Tag_Id: Todos_Tag[id].Tag_Id
+            });
+        }
+
+    }
+    return result;
+};
+
 //============================================================================
 
 
-//Get The Todo ids By tag ID
+//Get The Todos by ids
 var getTodosList = function (TodosId) {
 
     var result = [];
     for (var id in Todos) {
         if (Todos[id].Todo_Id == TodosId) {
-            result.push({
+            result = {
                 Todo_Id: Todos[id].Todo_Id,
                 Todo_Name: Todos[id].Todo_Name,
                 Complete: Todos[id].Complete,
                 //url: server.info.uri + '/tags/todos/' + id
-            });
+            }
+        }
+
+    }
+    return result;
+};
+
+
+var getTagList = function (TagId) {
+
+    var result = [];
+    for (var id in Tags) {
+        if (Tags[id].Tag_Id == TagId) {
+            result = {
+                Tag_Id: Tags[id].Tag_Id,
+                Tag_Name: Tags[id].Tag_Name,
+                //url: server.info.uri + '/tags/todos/' + id
+            }
         }
 
     }
@@ -596,21 +641,11 @@ server.route({
         var Tag_ID = request.params.Tag_Id; 
         var GetRecords = getTag(Tag_ID);
         var TagIDFromParameter = GetRecords.Tag_Id;
-        var Todo_IDs = gettodosIDS(TagIDFromParameter);
+        var Todo_IDs = gettodosIDSFromTagID(TagIDFromParameter);
         for (var key in Todo_IDs) {
             result.push(getTodosList(Todo_IDs[key].Todo_Id));
         }
         reply(result).code(200);
-        //response = getTag(request.params.tag_id);
-        //if (response === false) {
-        //    reply().code(404);
-        //} else {
-        //    reply(response).code(200);
-        //}
-        //for (var key in Tags) {
-        //    result.push(getTag(key));
-        //}
-        //reply(result).code(200);
     },
     config: {
         tags: ['api'],
@@ -636,6 +671,43 @@ server.route({
 });
 
 //============================================================================
+
+server.route({
+    method: 'GET',
+    path: '/todos/{Todo_Id}/tags/',
+    handler: function (request, reply) {
+        var result = [];
+        var Todo_ID = request.params.Todo_Id;
+        var GetRecords = getTodo(Todo_ID);
+        var TodoIDFromParameter = GetRecords.Todo_Id;
+        var Tag_IDs = gettagsIDSFromTodoID(TodoIDFromParameter);
+        for (var key in Tag_IDs) {
+            result.push(getTagList(Tag_IDs[key].Tag_Id));
+        }
+        reply(result).code(200);    
+    },
+    config: {
+        tags: ['api'],
+        description: 'List all Tags',
+        validate: {
+            params: {
+                Todo_Id: TagIdSchema
+            }
+        },
+        plugins: {
+            'hapi-swagger': {
+                responses: {
+                    200: {
+                        description: 'Success',
+                        schema: Joi.array().items(
+                            TagResourceSchema.label('Result')
+                        )
+                    }
+                }
+            }
+        }
+    }
+});
  //Update Certain Values From Tag Objects
 server.route({
     method: 'PUT',

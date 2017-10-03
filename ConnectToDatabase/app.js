@@ -505,9 +505,9 @@ server.route({
                     console.log(err);
                     return;
                 }
-                for (var attrName in request.payload) {
-                    Tags[Tag_ID][attrName] = request.payload[attrName];
-                    var Query = "Update Tag set " + attrName + " = '" + request.payload[attrName] + "' where Tag_Id = '" + TagIdFromParameter + "'";
+
+                Tags[Tag_ID]["Tag_Name"] = request.payload.Tag_Name;
+                    var Query = "Update Tag set Tag_Name = '" + request.payload.Tag_Name + "' where Tag_Id = '" + TagIdFromParameter + "'";
                     requst.query(Query, function (err, records) {
                         if (err) {
                             console.log(err);
@@ -515,7 +515,6 @@ server.route({
                         }                       
                         conn.close();
                     });
-                }
                 reply(getTag(Tag_ID)).code(200);
             });
 

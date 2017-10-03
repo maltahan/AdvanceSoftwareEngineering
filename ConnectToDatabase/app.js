@@ -671,7 +671,7 @@ server.route({
 });
 
 //============================================================================
-
+//List of tags from todo id
 server.route({
     method: 'GET',
     path: '/todos/{Todo_Id}/tags/',
@@ -708,6 +708,78 @@ server.route({
         }
     }
 });
+//============================================================================
+//Tag a todo
+
+server.route({
+    method: 'POST',
+    path: '/todos/{Todo_Id}/tags/',
+    handler: function (request, reply) {
+        var result = [];
+        var Todo_ID = request.params.Todo_Id;
+        var GetRecords = getTodo(Todo_ID);
+        var TodoIDFromParameter = GetRecords.Todo_Id;
+
+        var conn = new mssql.ConnectionPool(dbconfig);
+        var requst = new mssql.Request(conn);
+        conn.connect(function (err) {
+            if (err) {
+                console.log(err);
+                return ;
+            }
+            var Query = "insert into Todo_Tag values(" + request.payload.Tag_Id + " , " + TodoIDFromParameter + ")";
+            requst.query(Query, function (err, records) {
+                Todos_Tag.push({
+                    Tag_Id: request.payload.Tag_Id,
+                    Todo_Id: TodoIDFromParameter
+                });
+                if (err) {
+                    console.log(err);
+                    return "CONNECTION ERROR";
+                }
+                else {
+                    //console.log("Inserted Successfully");
+                    //reply(getTag(next - 1)).code(201);
+                    reply("Taged Successfully").code(201);
+                }
+                conn.close();
+            });
+        });
+        //var Tag_IDs = gettagsIDSFromTodoID(TodoIDFromParameter);
+        //for (var key in Tag_IDs) {
+        //    result.push(getTagList(Tag_IDs[key].Tag_Id));
+        //}
+        //reply(result).code(200);
+    },
+    config: {
+        tags: ['api'],
+        description: 'List all Tags',
+        validate: {
+            params: {
+                Todo_Id: TagIdSchema
+            },
+             payload: {
+                Tag_Id: Joi.number().integer()               
+            } 
+        },
+        plugins: {
+            'hapi-swagger': {
+                responses: {
+                    200: {
+                        description: 'Success',
+                        schema: Joi.array().items(
+                            TagResourceSchema.label('Result')
+                        )
+                    }
+                }
+            }
+        }
+    }
+});
+
+//============================================================================
+
+
  //Update Certain Values From Tag Objects
 server.route({
     method: 'PUT',

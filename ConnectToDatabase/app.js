@@ -180,43 +180,53 @@ server.route({
 
 //=====================================================================================
 //Delete All The Records From Database
-//server.route({
-//    method: 'DELETE',
-//    path: '/Tags/',
-//    handler: function (request, reply) {
+server.route({
+    method: 'DELETE',
+    path: '/tags/',
+    handler: function (request, reply) {
 
-//        var conn = new mssql.ConnectionPool(dbconfig);
-//        var requst = new mssql.Request(conn);
-//        conn.connect(function (err) {
+        var conn = new mssql.ConnectionPool(dbconfig);
+        var requst = new mssql.Request(conn);
+        var requst1 = new mssql.Request(conn);
+        conn.connect(function (err) {
 
-//            if (err) {
-//                console.log(err);
-//                return;
-//            }
-//            requst.query("delete FROM Tags", function (err, records) {
-//                if (err) {
-//                    console.log(err);
-//                    return;
-//                }
-//                else {
-//                    reply('ALL THE RECORDS HAS BEEN DELETED');
-//                }
-//                conn.close();
-//            });
-//        });
-//    },
-//    config: {
-//        tags: ['api'],
-//        description: 'Delete all Tags',
-//        plugins: {
-//            'hapi-swagger': {
-//                responses: {
-//                    204: { description: 'Tags deleted' }
-//                }
-//            }
-//        }
-//    }
-//});
+            if (err) {
+                console.log(err);
+                return;
+            }
+
+            requst.query("delete FROM Todo_Tag", function (err, records) {
+                if (err) {
+                    console.log(err);
+                    return;
+                }              
+            });
+
+
+            requst.query("delete FROM Tag", function (err, records) {
+                if (err) {
+                    console.log(err);
+                    return;
+                }
+                else {
+                    reply('ALL THE RECORDS HAS BEEN DELETED');
+                }
+                conn.close();
+            });
+        });
+    },
+    config: {
+        tags: ['api'],
+        description: 'Delete all Tags',
+        plugins: {
+            'hapi-swagger': {
+                responses: {
+                    204: { description: 'Tags deleted' }
+                }
+            }
+        }
+    }
+});
 //================================================================================
 
 
@@ -391,71 +401,71 @@ server.route({
 
 //============================================================================
 //Delete A Record By Its ID
-//server.route({
-//    method: 'DELETE',
-//    path: '/Tags/{Tag_Id}',
-//    handler: function (request, reply) {
-//        var conn = new mssql.ConnectionPool(dbconfig);
-//        var requst = new mssql.Request(conn);
-//        SupplierId = request.params.Tag_Id;
-//        var GetRecords = getTag(SupplierId);
-//        var SupplierIDFromParameter = GetRecords.SupplierID;
-//        var counter = 0;
-//        conn.connect(function (err) {
+server.route({
+    method: 'DELETE',
+    path: '/tags/{Tag_Id}',
+    handler: function (request, reply) {
+        var conn = new mssql.ConnectionPool(dbconfig);
+        var requst = new mssql.Request(conn);
+        Tag_ID = request.params.Tag_Id;
+        var GetRecords = getTag(Tag_ID);
+        var TagIDFromParameter = GetRecords.Tag_Id;
+        var counter = 0;
+        conn.connect(function (err) {
 
-//            if (err) {
-//                console.log(err);
-//                return;
-//            }
-//            for (var i = 0; i < Tags.length; i++) {
-//                if (SupplierIDFromParameter == Tags[i].SupplierID) {
-//                    counter++;
-//                }
-//            }
+            if (err) {
+                console.log(err);
+                return;
+            }
+            for (var i = 0; i < Tags.length; i++) {
+                if (TagIDFromParameter == Tags[i].Tag_Id) {
+                    counter++;
+                }
+            }
 
-//            if (counter > 0) {
-//                for (var j in Tags) {
-//                    Tags = Tags.filter(function () {
-//                        return Tags[j].SupplierID !== SupplierIDFromParameter;
-//                    });
-//                }
-//                requst.query("delete FROM Tags where SupplierID = '" + SupplierIDFromParameter + "'", function (err, records) {
+            if (counter > 0) {
+                for (var j in Tags) {
+                    Tags = Tags.filter(function () {
+                        return Tags[j].Tag_Id !== TagIDFromParameter;
+                    });
+                }
+                requst.query("delete FROM Tag where Tag_Id = '" + TagIDFromParameter + "'", function (err, records) {
 
-//                    if (err) {
-//                        console.log(err);
-//                        return;
-//                    }
-//                    else {
-//                        reply('The Record Has Been Deleted').code(200);
-//                    }
-//                    Tags = GetTags();
-//                    conn.close();
-//                });
-//            }
-//            else {
-//                reply('Supplier Not Found').code(404);
-//                return;
-//            }
-//        });
-//    },
-//    config: {
-//        tags: ['api'],
-//        description: 'Delete a given Supplier',
-//        validate: {
-//            params: {
-//                Tag_Id: TagIdSchema
-//            }
-//        },
-//        plugins: {
-//            'hapi-swagger': {
-//                responses: {
-//                    204: { description: 'Supplier deleted' },
-//                    404: { description: 'Supplier not found' }
-//                }
-//            }
-//        }
-//    }
-//});
+                    if (err) {
+                        console.log(err);
+                        return;
+                    }
+                    else {
+                        reply('The Record Has Been Deleted').code(200);
+                    }
+                    Tags = GetTags();
+                    conn.close();
+                });
+            }
+            else {
+                reply('Tag Not Found').code(404);
+                return;
+            }
+        });
+    },
+    config: {
+        tags: ['api'],
+        description: 'Delete a given Supplier',
+        validate: {
+            params: {
+                Tag_Id: TagIdSchema
+            }
+        },
+        plugins: {
+            'hapi-swagger': {
+                responses: {
+                    204: { description: 'Supplier deleted' },
+                    404: { description: 'Supplier not found' }
+                }
+            }
+        }
+    }
+});
 //=======================================================================
 
 //Start The Server

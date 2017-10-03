@@ -429,6 +429,17 @@ server.route({
                         return Tags[j].Tag_Id !== TagIDFromParameter;
                     });
                 }
+
+                requst.query("delete FROM Todo_Tag where Tag_Id = '" + TagIDFromParameter + "'", function (err, records) {
+
+                    if (err) {
+                        console.log(err);
+                        return;
+                    }                  
+                    Tags = GetTags();
+                });
+
+
                 requst.query("delete FROM Tag where Tag_Id = '" + TagIDFromParameter + "'", function (err, records) {
 
                     if (err) {

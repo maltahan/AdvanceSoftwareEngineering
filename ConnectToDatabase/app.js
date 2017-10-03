@@ -351,7 +351,8 @@ server.route({
                 if (err) {
                     console.log(err);
                     return;
-                }              
+                }
+                Todos_Tag = [];
             });
 
 
@@ -361,6 +362,7 @@ server.route({
                     return;
                 }
                 else {
+                    Todos = [];
                     reply('ALL THE RECORDS HAS BEEN DELETED');
                 }
                 conn.close();
@@ -779,7 +781,82 @@ server.route({
 
 //============================================================================
 
+//Remove a tag
 
+server.route({
+    method: 'DELETE',
+    path: '/todos/{Todo_Id}/tags/{Tag_Id}',
+    handler: function (request, reply) {
+        var result = [];
+        var Todo_ID = request.params.Todo_Id;
+        var GetRecords = getTodo(Todo_ID);
+        var TodoIDFromParameter = GetRecords.Todo_Id;
+
+        var Tag_ID = request.params.Tag_Id;
+        var GetRecords = getTag(Tag_ID);
+        var TagIDFromParameter = GetRecords.Tag_Id;
+
+
+
+        var conn = new mssql.ConnectionPool(dbconfig);
+        var requst = new mssql.Request(conn);
+        conn.connect(function (err) {
+            if (err) {
+                console.log(err);
+                return;
+            }
+            var Query = "delete from Todo_Tag where Tag_Id = " + TagIDFromParameter + " and Todo_Id = " + TodoIDFromParameter + "";
+            requst.query(Query, function (err, records) {
+                for (var j in Todos_Tag){
+                    if (Todos_Tag[j].Tag_Id == TagIDFromParameter && Todos_Tag[j].Todo_Id == TodoIDFromParameter) {
+                        Todos_Tag.splice(j,1);
+                    }                                           
+                }
+               
+                if (err) {
+                    console.log(err);
+                    return "CONNECTION ERROR";
+                }
+                else {
+                    //console.log("Inserted Successfully");
+                    //reply(getTag(next - 1)).code(201);
+                    reply("Removed Successfully").code(201);
+                }
+                conn.close();
+            });
+        });
+        //var Tag_IDs = gettagsIDSFromTodoID(TodoIDFromParameter);
+        //for (var key in Tag_IDs) {
+        //    result.push(getTagList(Tag_IDs[key].Tag_Id));
+        //}
+        //reply(result).code(200);
+    },
+    config: {
+        tags: ['api'],
+        description: 'List all Tags',
+        validate: {
+            params: {
+                Todo_Id: TagIdSchema,
+                Tag_Id: TagIdSchema
+            }
+            
+        },
+        plugins: {
+            'hapi-swagger': {
+                responses: {
+                    200: {
+                        description: 'Success',
+                        schema: Joi.array().items(
+                            TagResourceSchema.label('Result')
+                        )
+                    }
+                }
+            }
+        }
+    }
+});
+
+//============================================================================
  //Update Certain Values From Tag Objects
 server.route({
     method: 'PUT',

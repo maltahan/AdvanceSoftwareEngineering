@@ -347,7 +347,6 @@ server.route({
     method: 'POST',
     path: '/tags/',
     handler: function (request, reply) {
-        var data = getLastRecordData();
         var conn = new mssql.ConnectionPool(dbconfig);
         var requst = new mssql.Request(conn);
         conn.connect(function (err) {
@@ -589,17 +588,23 @@ server.route({
 //List all the todos that are assosiated to a certain tag
 server.route({
     method: 'GET',
-    path: '/tags/todos/{Tag_Id}',
+    path: '/todos/{Tag_Id}',
     handler: function (request, reply) {
         var result = [];
         var Tag_ID = request.params.Tag_Id; 
         var GetRecords = getTag(Tag_ID);
         var TagIDFromParameter = GetRecords.Tag_Id;
         var Todo_IDs = gettodosIDSFromTagID(TagIDFromParameter);
-        for (var key in Todo_IDs) {
-            result.push(getTodosList(Todo_IDs[key].Todo_Id));
+        if (TagIDFromParameter == undefined) {
+            reply("not exist").code(404);
         }
-        reply(result).code(200);
+        else {
+            for (var key in Todo_IDs) {
+                result.push(getTodosList(Todo_IDs[key].Todo_Id));
+            }
+            reply(result).code(200);
+        }
+       
     },
     config: {
         tags: ['api'],
@@ -635,10 +640,16 @@ server.route({
         var GetRecords = getTodo(Todo_ID);
         var TodoIDFromParameter = GetRecords.Todo_Id;
         var Tag_IDs = gettagsIDSFromTodoID(TodoIDFromParameter);
-        for (var key in Tag_IDs) {
-            result.push(getTagList(Tag_IDs[key].Tag_Id));
+        if (TodoIDFromParameter == undefined) {
+            reply("not exist").code(404);
         }
-        reply(result).code(200);    
+        else {
+            for (var key in Tag_IDs) {
+                result.push(getTagList(Tag_IDs[key].Tag_Id));
+            }
+            reply(result).code(200);
+        }
+            
     },
     config: {
         tags: ['api'],
@@ -672,7 +683,10 @@ server.route({
         var Todo_ID = request.params.Todo_Id;
         var GetRecords = getTodo(Todo_ID);
         var TodoIDFromParameter = GetRecords.Todo_Id;
-
+        if (TodoIDFromParameter == undefined) {
+            reply("not exist").code(404);
+        }
+        
         var conn = new mssql.ConnectionPool(dbconfig);
         var requst = new mssql.Request(conn);
         conn.connect(function (err) {
@@ -736,6 +750,11 @@ server.route({
         var Tag_ID = request.params.Tag_Id;
         var GetRecords = getTag(Tag_ID);
         var TagIDFromParameter = GetRecords.Tag_Id;
+
+        if (TodoIDFromParameter == undefined || TagIDFromParameter == undefined) {
+            reply("not exist").code(404);
+        }
+
         var conn = new mssql.ConnectionPool(dbconfig);
         var requst = new mssql.Request(conn);
         conn.connect(function (err) {
@@ -745,20 +764,26 @@ server.route({
             }
             var Query = "delete from Todo_Tag where Tag_Id = " + TagIDFromParameter + " and Todo_Id = " + TodoIDFromParameter + "";
             requst.query(Query, function (err, records) {
-                for (var j in Todos_Tag){
-                    if (Todos_Tag[j].Tag_Id == TagIDFromParameter && Todos_Tag[j].Todo_Id == TodoIDFromParameter) {
-                        Todos_Tag.splice(j,1);
-                    }                                           
-                }
-               
-                if (err) {
-                    console.log(err);
-                    return ;
+                if (records.rowsAffected == 0) {
+                    reply("The record doesnt exist (there is no relation between both of them)").code(404);
                 }
                 else {
-                    reply("Removed Successfully").code(201);
+                    for (var j in Todos_Tag) {
+                        if (Todos_Tag[j].Tag_Id == TagIDFromParameter && Todos_Tag[j].Todo_Id == TodoIDFromParameter) {
+                            Todos_Tag.splice(j, 1);
+                        }
+                    }
+
+                    if (err) {
+                        console.log(err);
+                        return;
+                    }
+                    else {
+                        reply("Removed Successfully").code(201);
+                    }
+                    conn.close();
                 }
-                conn.close();
+                
             });
         });      
     },
@@ -813,7 +838,8 @@ server.route({
                 }
 
                 Tags[Tag_ID]["Tag_Name"] = request.payload.Tag_Name;
-                    var Query = "Update Tag set Tag_Name = '" + request.payload.Tag_Name + "' where Tag_Id = '" + TagIdFromParameter + "'";
+                Tags[Tag_ID]["Tag_Id"] = TagIdFromParameter;
+                    var Query = "Update Tag set Tag_Name = '" + request.payload.Tag_Name + "' where Tag_Id = " + TagIdFromParameter + "";
                     requst.query(Query, function (err, records) {
                         if (err) {
                             console.log(err);
@@ -838,7 +864,7 @@ server.route({
 
                     var Query = "insert into Tag values('" + request.payload.Tag_Name + "')";
                     Tags.push({
-                        Tag_Id:   request.payload.Tag_Id,
+                        Tag_Id: request.payload.Tag_Id,
                         Tag_Name: request.payload.Tag_Name,
                     });
                 

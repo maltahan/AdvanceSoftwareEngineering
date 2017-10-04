@@ -50,10 +50,9 @@ function GetTags() {
 }
 
 //===========================================================================
-
+//Get The List of All The Relations between the tags and the todos
 function Get_Todo_Tag() {
 
-    //Establish The Connection To The Database
     var conn = new mssql.ConnectionPool(dbconfig);
     var result = [];
     var requst = new mssql.Request(conn);
@@ -83,10 +82,9 @@ function Get_Todo_Tag() {
     return result;
 }
 //======================================================================
-
+//Get the List of all todos
 function GetTodos() {
 
-    //Establish The Connection To The Database
     var conn = new mssql.ConnectionPool(dbconfig);
     var result = [];
     var requst = new mssql.Request(conn);
@@ -119,42 +117,13 @@ function GetTodos() {
 }
 
 //===========================================================================
-//Get The Last SupplierID From The Database
-function getLastRecordData() {
 
-    var conn = new mssql.ConnectionPool(dbconfig);
-    var result = [];
-    var requst = new mssql.Request(conn);
-    conn.connect(function (err) {
-        if (err) {
-            console.log(err);
-            return;
-        }
-        requst.query("SELECT TOP 1 * FROM Tag ORDER BY Tag_Id DESC", function (err, records) {
-            if (err) {
-                console.log(err);
-                return;
-            }
-            else {
-                for (var id in records.recordset) {
-                    result.push({
-                        Tag_Id: records.recordset[id].Tag_Id,
-                    });
-
-                }
-            }
-            conn.close();
-        });
-    });
-    return result;
-}
 //================================================================================
 //Some Restrections About The Data Types and The IDs
 var Tags = GetTags();
 var Todos = GetTodos();
 var Todos_Tag = Get_Todo_Tag();
 var nextId = Tags.length;
-//var LastRecord = getLastRecordData();
 
 var TagResourceSchema = Joi.object({
     Tag_Id: Joi.number().integer(),
@@ -163,8 +132,6 @@ var TagResourceSchema = Joi.object({
 });
 var TagIdSchema = Joi.number().integer().min(0)
     .required().description('The Tag ID');
-//==============================================================================
-
 
 //=============================================================================
 //Get The Tag By ID
@@ -178,7 +145,7 @@ var getTag = function (id) {
     return result;
 };
 
-//Get The Tag By ID
+//Get The Todo By ID
 var getTodo = function (id) {
     if (!(id in Todos)) { return false; }
     var result = {
@@ -190,8 +157,6 @@ var getTodo = function (id) {
     return result;
 };
 //=============================================================================
-
-
 //Get The Todo ids By tag ID
 var gettodosIDSFromTagID = function (TagID) {
    
@@ -244,7 +209,7 @@ var getTodosList = function (TodosId) {
     return result;
 };
 
-
+//Get the tags by its id
 var getTagList = function (TagId) {
 
     var result = [];
@@ -295,10 +260,6 @@ server.register([
     }
 ]);
 
-
-//===========================================================================================
-
-
 //===========================================================================================
 //Get The List Of All The Tags
 server.route({
@@ -328,8 +289,6 @@ server.route({
         }
     }
 });
-//=====================================================================================
-
 //=====================================================================================
 //Delete All The Records From Database
 server.route({
@@ -381,8 +340,6 @@ server.route({
         }
     }
 });
-//================================================================================
-
 
 //===============================================================================
 //Add New Record To The Database
@@ -472,8 +429,6 @@ server.route({
         }
     }
 });
-//=================================================================================
-
 //================================================================================
 // Update Certain Values From Supplier Objects
 //server.route({
@@ -552,8 +507,6 @@ server.route({
 //    }
 //});
 //============================================================================
-
-//============================================================================
 //Delete A Record By Its ID
 server.route({
     method: 'DELETE',
@@ -583,7 +536,7 @@ server.route({
                         return Tags[j].Tag_Id !== TagIDFromParameter;
                     });
                 }
-
+                //Delete the relation first from the relation table Todo_Tag
                 requst.query("delete FROM Todo_Tag where Tag_Id = '" + TagIDFromParameter + "'", function (err, records) {
 
                     if (err) {
@@ -593,7 +546,7 @@ server.route({
                     Tags = GetTags();
                 });
 
-
+                //Delete the tag from the tag
                 requst.query("delete FROM Tag where Tag_Id = '" + TagIDFromParameter + "'", function (err, records) {
 
                     if (err) {
@@ -632,7 +585,6 @@ server.route({
     }
 });
 //=======================================================================
-
 
 //List all the todos that are assosiated to a certain tag
 server.route({
@@ -712,7 +664,6 @@ server.route({
 });
 //============================================================================
 //Tag a todo
-
 server.route({
     method: 'POST',
     path: '/todos/{Todo_Id}/tags/',
@@ -740,18 +691,11 @@ server.route({
                     return "CONNECTION ERROR";
                 }
                 else {
-                    //console.log("Inserted Successfully");
-                    //reply(getTag(next - 1)).code(201);
                     reply("Taged Successfully").code(201);
                 }
                 conn.close();
             });
         });
-        //var Tag_IDs = gettagsIDSFromTodoID(TodoIDFromParameter);
-        //for (var key in Tag_IDs) {
-        //    result.push(getTagList(Tag_IDs[key].Tag_Id));
-        //}
-        //reply(result).code(200);
     },
     config: {
         tags: ['api'],
@@ -780,9 +724,7 @@ server.route({
 });
 
 //============================================================================
-
 //Remove a tag
-
 server.route({
     method: 'DELETE',
     path: '/todos/{Todo_Id}/tags/{Tag_Id}',
@@ -791,13 +733,9 @@ server.route({
         var Todo_ID = request.params.Todo_Id;
         var GetRecords = getTodo(Todo_ID);
         var TodoIDFromParameter = GetRecords.Todo_Id;
-
         var Tag_ID = request.params.Tag_Id;
         var GetRecords = getTag(Tag_ID);
         var TagIDFromParameter = GetRecords.Tag_Id;
-
-
-
         var conn = new mssql.ConnectionPool(dbconfig);
         var requst = new mssql.Request(conn);
         conn.connect(function (err) {
@@ -815,21 +753,14 @@ server.route({
                
                 if (err) {
                     console.log(err);
-                    return "CONNECTION ERROR";
+                    return ;
                 }
                 else {
-                    //console.log("Inserted Successfully");
-                    //reply(getTag(next - 1)).code(201);
                     reply("Removed Successfully").code(201);
                 }
                 conn.close();
             });
-        });
-        //var Tag_IDs = gettagsIDSFromTodoID(TodoIDFromParameter);
-        //for (var key in Tag_IDs) {
-        //    result.push(getTagList(Tag_IDs[key].Tag_Id));
-        //}
-        //reply(result).code(200);
+        });      
     },
     config: {
         tags: ['api'],
